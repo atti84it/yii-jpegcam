@@ -1,1 +1,4 @@
 demo-app/framework/*
+demo-app/assets/*
+demo-app/protected/runtime/*
+demo-app/uploads/user_photo.jpg

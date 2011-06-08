@@ -1,0 +1,4 @@
+INSTALLATION
+
+1. Copy yii-jpegcam directory into protected/extensions directory
+2. Modify the each Controller where you want to use the widget adding the actions() function according to the example
