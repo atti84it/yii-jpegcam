@@ -18,9 +18,13 @@ $this->breadcrumbs=array(
 BLOCK;
       $this->widget('application.extensions.jpegcam.EJpegcam', array(
             'apiUrl' => 'index.php?r=user/jpegcam.saveJpg',
+            'shutterSound' => false,
             'buttons' => array(
                 'configure' => 'Configure',
-                'takesnapshot' => 'Take Snapshot!'
+                'takesnapshot' => 'Take Snapshot!',
+                //'freeze' => 'Capture',
+                //'upload' => 'Upload',
+                //'reset' => 'Reset'
             ),
             'onBeforeSnap' => $onBeforeSnap,
             'completionHandler' => $completionHandler

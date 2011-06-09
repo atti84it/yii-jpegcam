@@ -39,6 +39,13 @@ class EJpegcam extends CWidget
      * "document.getElementById('upload_results').innerHTML = '<h1>Uploading...</h1>';"
      */
     public $onBeforeSnap = '';
+    
+    /**
+     * JavaScript code to be executed before taking the picture. Eg:
+     * "document.getElementById('upload_results').innerHTML = '<h1>Uploading...</h1>';"
+     */
+    public $onBeforeUpload = '';    
+    
 
     /**
      * JavaScript code to be executed after receiving the response.
@@ -61,7 +68,8 @@ class EJpegcam extends CWidget
         $cs->registerScriptFile($assets_url.'webcam.js', CClientScript::POS_BEGIN);
 
         // Correcting url to adapt to assets directory
-        $js2 = "webcam.swf_url = '$assets_url" . "webcam.swf'";
+        $js2 = "webcam.swf_url = '$assets_url" . "webcam.swf';\n";
+        $js2 .= "webcam.shutter_url = '$assets_url" . "shutter.mp3';\n";
         $cs->registerScript ('fdfd', $js2, CClientScript::POS_BEGIN);
 
         $html = <<<BLOCK
@@ -101,7 +109,7 @@ BLOCK;
         if ( is_bool ( $this->shutterSound ) )
             $html = str_replace ( "%SHUTTERSOUND%", $this->shutterSound ? "true" : "false", $html);
         else
-            $html = str_replace ( "%SHUTTERSOUND%", "true, {$this->shutterSound}", $html);
+            $html = str_replace ( "%SHUTTERSOUND%", "true, $assets_url{$this->shutterSound}", $html);
 
         $getHtmlArgs = $this->camWidth . ", " . $this->camHeight;
         if ($this->serverWidth && $this->serverHeight)
@@ -109,8 +117,8 @@ BLOCK;
         $html = str_replace ( "%GETHTMLARGS%", $getHtmlArgs, $html);
 
         $html = str_replace ( "%ONBEFORESNAP%", $this->onBeforeSnap, $html);
-        $html = str_replace ( "%ONBEFOREUPLOAD%", $this->onBeforeSnap, $html);
-        $html = str_replace ( "%COMPLETIONHANDLER", $this->completionHandler, $html);
+        $html = str_replace ( "%ONBEFOREUPLOAD%", $this->onBeforeUpload, $html);
+        $html = str_replace ( "%COMPLETIONHANDLER%", $this->completionHandler, $html);
 
         $form = "\n<form>\n";
         foreach ($this->buttons as $key => $val)
