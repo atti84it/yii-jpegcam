@@ -1,42 +1,45 @@
 <?php
 class EJpegcam extends CWidget
-{ public $filepath; //cancallare!
+{
     /**
      * The url to call to save the jpg
      * = api_url parameter (See Jpegcam documentation)
      */
     public $apiUrl = '';
-    
+
     /**
-     * shutter_sound parameter
-     * See Jpegcam documentation
+     * Jpeg Quality
      */
-    public $shutterSound = false;
-    
+    public $jpegQuality = 90;
+
+    /**
+     * true = Play sound
+     * false = No sound
+     * string = Sound relative url
+     */
+    public $shutterSound = true;
+
     /**
      * Size of webcam
      */
     public $camWidth = 320;
     public $camHeight = 240;
-    
+    public $serverWidth = false;
+    public $serverHeight = false;
+
     /**
-     * Show the "Configure" button:
-     * - false -> doesn't show the button
-     * - any string -> The text of the button
+     * Associative array of buttons to show having
+     *   $key = one of 'configure, takesnapshot, freeze, upload, reset'
+     *   $val = the string to show on the button
      */
-    public $configureButton = "Configure...";
-     
-    /**
-     * Text for the "Take Snapshot" button:
-     */ 
-    public $takeSnapshotButton = "Take Snapshot";
-    
+    public $buttons = array();
+
     /**
      * JavaScript code to be executed before taking the picture. Eg:
      * "document.getElementById('upload_results').innerHTML = '<h1>Uploading...</h1>';"
      */
     public $onBeforeSnap = '';
-    
+
     /**
      * JavaScript code to be executed after receiving the response.
      * Assume 'msg' comes from the server. Eg:
@@ -47,107 +50,94 @@ class EJpegcam extends CWidget
 	 *	else alert("PHP Error: " + msg);
      */
     public $completionHandler = '';
-    
+
     public function run()
     {
         $base_dir = dirname(__FILE__);
         $assets_dir = $base_dir.DIRECTORY_SEPARATOR.'assets';
         $assets_url = Yii::app()->getAssetManager()->publish($assets_dir).DIRECTORY_SEPARATOR;
-        
+
         $cs = Yii::app()->getClientScript();
         $cs->registerScriptFile($assets_url.'webcam.js', CClientScript::POS_BEGIN);
-        
-        // Corrección del url según la carpeta donde el asset está publicado
+
+        // Correcting url to adapt to assets directory
         $js2 = "webcam.swf_url = '$assets_url" . "webcam.swf'";
         $cs->registerScript ('fdfd', $js2, CClientScript::POS_BEGIN);
-        
-        $txt = "<script language=\"JavaScript\">";
-        
-        if ($this->apiUrl != '')
-            $txt .= "webcam.set_api_url( '{$this->apiUrl}' );\n";
-            
-        $txt .= "webcam.set_quality( 90 );\n";
-        $txt .= "webcam.set_shutter_sound( {$this->shutterSound} );\n";
-        
-        $txt .= "document.write( webcam.get_html({$this->camWidth}, {$this->camHeight}) );\n";
-        
-        $txt .= <<<BLOCK
-                 webcam.set_hook( 'onComplete', 'my_completion_handler' );
-		
-                 function take_snapshot() {
+
+        $html = <<<BLOCK
+<script language="JavaScript">
+    webcam.set_api_url( '%APIURL%' );
+    webcam.set_quality( %JPEGQUALITY% ); // JPEG quality (1 - 100)
+    webcam.set_shutter_sound( %SHUTTERSOUND% ); // play shutter click sound
+
+    document.write( webcam.get_html(%GETHTMLARGS%) );
+
+    webcam.set_hook( 'onComplete', 'my_completion_handler' );
+
+    function take_snapshot() {
+        %ONBEFORESNAP%
+        webcam.snap();
+    }
+
+    function do_upload() {
+        %ONBEFOREUPLOAD%
+        webcam.upload();
+    }
+
+    function my_completion_handler(msg) {
+        %COMPLETIONHANDLER%
+    }
+</script>
+
 BLOCK;
 
-        $txt .= $this->onBeforeSnap;
-        
-        $txt .= <<<BLOCK
-                    webcam.snap();
-                }
-		
-		function my_completion_handler(msg) {
-BLOCK;
-        $txt .= $this->completionHandler;
-        
-        $txt .= "}";
-        
-        $txt .= "</script>\n"; // Finished setting webcam parameters
-        
-        //Starting buttons
-        $txt .= "<form>\n";
-        if ($this->configureButton)
-            $txt .= "<input type=button value=\"{$this->configureButton}\" onClick=\"webcam.configure()\">\n";
-		$txt .= "<input type=button value=\"{$this->takeSnapshotButton}\" onClick=\"take_snapshot()\">\n";
-		$txt .= "</form>";
-	
-        
-        
-        $js = <<<BLOCK
-	<script language="JavaScript">
-		webcam.set_api_url( 'guardaJpg' );
-		webcam.set_quality( 90 ); // JPEG quality (1 - 100)
-		webcam.set_shutter_sound( false ); // play shutter click sound
-	</script>
-	
-	<!-- Next, write the movie to the page at 320x240 -->
-	<script language="JavaScript">
-		document.write( webcam.get_html(320, 240) );
-	</script>
-	
-	<!-- Some buttons for controlling things -->
-	<br/><form>
-		<input type=button value="Configure..." onClick="webcam.configure()">
-		&nbsp;&nbsp;
-		<input type=button value="Take Snapshot" onClick="take_snapshot()">
-	</form>
-	
-	<!-- Code to handle the server response (see test.php) -->
-	<script language="JavaScript">
-		webcam.set_hook( 'onComplete', 'my_completion_handler' );
-		
-		function take_snapshot() {
-			// take snapshot and upload to server
-			document.getElementById('upload_results').innerHTML = '<h1>Uploading...</h1>';
-			webcam.snap();
-		}
-		
-		function my_completion_handler(msg) {
-			// extract URL out of PHP output
-			if (msg == 'OK') {
-				document.getElementById('upload_results').innerHTML = '<h1>OK!</h1>';
-				
-				// reset camera for another shot
-				webcam.reset();
-			}
-			else alert("PHP Error: " + msg);
-		}
-	</script>
-	
+        // str_replace ( mixed $needle , mixed $replace , mixed $haystack [, int &$count ] );
 
-    <div id="upload_results" style="background-color:#eee;"></div>
-BLOCK;
-        
+        // %APIURL% %JPEGQUALITY% %SHUTTERSOUND% %GETHTMLARGS% %ONBEFORESNAP% %COMPLETIONHANDLER%
 
-    
-    echo $txt;
+        $html = str_replace ( "%APIURL%", $this->apiUrl, $html);
+        $html = str_replace ( "%JPEGQUALITY%", $this->jpegQuality, $html);
+        
+        if ( is_bool ( $this->shutterSound ) )
+            $html = str_replace ( "%SHUTTERSOUND%", $this->shutterSound ? "true" : "false", $html);
+        else
+            $html = str_replace ( "%SHUTTERSOUND%", "true, {$this->shutterSound}", $html);
+
+        $getHtmlArgs = $this->camWidth . ", " . $this->camHeight;
+        if ($this->serverWidth && $this->serverHeight)
+            $getHtmlArgs .= ", " . $this->serverWidth . ", " . $this->serverHeight;
+        $html = str_replace ( "%GETHTMLARGS%", $getHtmlArgs, $html);
+
+        $html = str_replace ( "%ONBEFORESNAP%", $this->onBeforeSnap, $html);
+        $html = str_replace ( "%ONBEFOREUPLOAD%", $this->onBeforeSnap, $html);
+        $html = str_replace ( "%COMPLETIONHANDLER", $this->completionHandler, $html);
+
+        $form = "\n<form>\n";
+        foreach ($this->buttons as $key => $val)
+        {
+            switch ( strtolower($key) ) { // 'configure, takesnapshot, freeze, upload, reset'
+                case "configure":
+                    $form .= "<input type=button value=\"$val\" onClick=\"webcam.configure()\">\n";
+                    break;
+                case "takesnapshot":
+                    $form .= "<input type=button value=\"$val\" onClick=\"take_snapshot()\">\n";
+                    break;
+                case "freeze":
+                    $form .= "<input type=button value=\"$val\" onClick=\"webcam.freeze()\">\n";
+                    break;
+                case "upload":
+                    $form .= "<input type=button value=\"$val\" onClick=\"do_upload()\">\n";
+                    break;
+                case "reset":
+                    $form .= "<input type=button value=\"$val\" onClick=\"webcam.reset()\">\n";
+                    break;
+                default:
+                    throw new Exception ("Wrong argument: $key");
+            }
+        }
+        $form .= "</form>\n";
+
+        echo $html . $form;
     }
 
     public static function actions()
