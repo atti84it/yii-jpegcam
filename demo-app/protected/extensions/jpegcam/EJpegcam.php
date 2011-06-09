@@ -18,6 +18,13 @@ class EJpegcam extends CWidget
      * string = Sound relative url
      */
     public $shutterSound = true;
+    
+    /**
+     * Boolean. When enabled, this causes the image to be captured and uploaded 
+     * without interrupting the video preview. Meaning, the snapshot is not "frozen", 
+     * but instead the webcam video continues to be played. 
+     */
+    public $stealth = false;
 
     /**
      * Size of webcam
@@ -77,6 +84,7 @@ class EJpegcam extends CWidget
     webcam.set_api_url( '%APIURL%' );
     webcam.set_quality( %JPEGQUALITY% ); // JPEG quality (1 - 100)
     webcam.set_shutter_sound( %SHUTTERSOUND% ); // play shutter click sound
+    webcam.set_stealth( %STEALTH% );
 
     document.write( webcam.get_html(%GETHTMLARGS%) );
 
@@ -101,10 +109,11 @@ BLOCK;
 
         // str_replace ( mixed $needle , mixed $replace , mixed $haystack [, int &$count ] );
 
-        // %APIURL% %JPEGQUALITY% %SHUTTERSOUND% %GETHTMLARGS% %ONBEFORESNAP% %COMPLETIONHANDLER%
+        // %APIURL% %JPEGQUALITY% %SHUTTERSOUND% %STEALTH% %GETHTMLARGS% %ONBEFORESNAP% %COMPLETIONHANDLER%
 
         $html = str_replace ( "%APIURL%", $this->apiUrl, $html);
         $html = str_replace ( "%JPEGQUALITY%", $this->jpegQuality, $html);
+        $html = str_replace ( "%STEALTH%", $this->stealth, $html);
         
         if ( is_bool ( $this->shutterSound ) )
             $html = str_replace ( "%SHUTTERSOUND%", $this->shutterSound ? "true" : "false", $html);
